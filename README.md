@@ -189,7 +189,7 @@ payment-management-system/
 ### Step 1: Clone the Repository
 
 ```bash
-git clone <https://github.com/SahilKishor21/FlowPay>
+git clone https://github.com/SahilKishor21/FlowPay
 cd payment-management-system
 ```
 
@@ -495,9 +495,5 @@ This project is licensed under the MIT License.
 - All open-source contributors
 </artifact>
 
-<artifact identifier="actual-problem-solving" type="application/vnd.ant.code" language="markdown" title="PROBLEM_SOLVING_DOCUMENT.md">
-# Part 1: Problem Solving Document
-## B2B Payment Management System
 
----
 
