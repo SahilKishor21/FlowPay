@@ -370,7 +370,7 @@ export function ChequeList() {
         ) : (
           cheques.map((cheque) => (
             <div
-              key={cheque.id}
+              key={cheque._id}
               className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-gradient-to-r from-white/80 to-blue-50/80 dark:from-slate-800/80 dark:to-blue-900/20 rounded-xl border border-white/40 dark:border-slate-700/40 hover:shadow-lg transition-all"
             >
               <div className="flex-1">
