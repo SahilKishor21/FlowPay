@@ -37,25 +37,7 @@ export default function Home() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-950 dark:via-blue-950 dark:to-indigo-950">
       <div className="container mx-auto px-4 py-6 space-y-6">
         <DashboardHeader />
-        
-        {!backendConnected && (
-          <Alert className="bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800">
-            <WifiOff className="h-4 w-4 text-yellow-600" />
-            <AlertDescription className="text-yellow-800 dark:text-yellow-200">
-              ⚠️ Backend not connected. Please start the backend server on port 5000.
-            </AlertDescription>
-          </Alert>
-        )}
-
-        {backendConnected && (
-          <Alert className="bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800">
-            <Wifi className="h-4 w-4 text-green-600" />
-            <AlertDescription className="text-green-800 dark:text-green-200">
-              ✅ Connected to backend - All data is being saved to database
-            </AlertDescription>
-          </Alert>
-        )}
-        
+    
         <StatsCards />
         
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

@@ -34,12 +34,11 @@ interface PaymentStore {
   cashTransactions: CashTransaction[]
   stats: Stats
   lastUpdated: string
-  upcomingPayments: any[]
-  recentActivity: any[]
   loading: boolean
   error: string | null
   backendConnected: boolean
   initialized: boolean
+  isInitializing: boolean
   
   // Actions
   fetchCheques: () => Promise<void>
@@ -47,10 +46,9 @@ interface PaymentStore {
   fetchDashboardData: () => Promise<void>
   addCheque: (cheque: Omit<Cheque, 'id'>) => Promise<void>
   addCashTransaction: (transaction: Omit<CashTransaction, 'id'>) => Promise<void>
+  updateChequeStatus: (id: string, status: string, bounceReason?: string) => Promise<void>
   refreshData: () => Promise<void>
   calculateStats: () => void
-  getUpcomingPayments: () => any[]
-  getRecentActivity: () => any[]
   initializeStore: () => Promise<void>
 }
 
@@ -64,12 +62,11 @@ export const usePaymentStore = create<PaymentStore>((set, get) => ({
     bounceRate: 0,
   },
   lastUpdated: 'just now',
-  upcomingPayments: [],
-  recentActivity: [],
   loading: false,
   error: null,
   backendConnected: false,
   initialized: false,
+  isInitializing: false,
 
   fetchCheques: async () => {
     try {
@@ -80,10 +77,6 @@ export const usePaymentStore = create<PaymentStore>((set, get) => ({
         error: null 
       })
       get().calculateStats()
-      set({ 
-        upcomingPayments: get().getUpcomingPayments(),
-        recentActivity: get().getRecentActivity(),
-      })
     } catch (error) {
       console.error('Failed to fetch cheques:', error)
       set({ backendConnected: false })
@@ -100,9 +93,6 @@ export const usePaymentStore = create<PaymentStore>((set, get) => ({
         error: null 
       })
       get().calculateStats()
-      set({ 
-        recentActivity: get().getRecentActivity(),
-      })
     } catch (error) {
       console.error('Failed to fetch cash transactions:', error)
       set({ backendConnected: false })
@@ -130,14 +120,7 @@ export const usePaymentStore = create<PaymentStore>((set, get) => ({
         set({ cashTransactions: data.recentCash })
       }
       
-      const upcomingData = await dashboardAPI.getUpcomingPayments()
-      set({ upcomingPayments: upcomingData })
-      
       get().calculateStats()
-      set({ 
-        upcomingPayments: get().getUpcomingPayments(),
-        recentActivity: get().getRecentActivity(),
-      })
       
     } catch (error) {
       console.error('Failed to fetch dashboard data:', error)
@@ -190,55 +173,6 @@ export const usePaymentStore = create<PaymentStore>((set, get) => ({
     })
   },
 
-  getUpcomingPayments: () => {
-    const { cheques } = get()
-    const today = new Date()
-    const nextMonth = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000)
-
-    return cheques
-      .filter(c => {
-        const dueDate = new Date(c.dueDate)
-        return (
-          (c.status === 'Pending' || c.status === 'Post-Dated') &&
-          dueDate >= today &&
-          dueDate <= nextMonth
-        )
-      })
-      .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
-      .slice(0, 5)
-      .map(c => ({
-        id: c.id,
-        clientName: c.clientName,
-        amount: c.amount,
-        date: c.dueDate,
-      }))
-  },
-
-  getRecentActivity: () => {
-    const { cheques, cashTransactions } = get()
-    const activities: any[] = []
-
-    cheques.slice(-3).reverse().forEach(c => {
-      activities.push({
-        id: `cheque-${c.id}`,
-        description: `Cheque ${c.chequeNumber} - ${c.status}`,
-        timestamp: new Date(c.dueDate).toLocaleDateString('en-IN'),
-        type: c.status === 'Cleared' ? 'success' : c.status === 'Bounced' ? 'warning' : 'info',
-      })
-    })
-
-    cashTransactions.slice(-2).reverse().forEach(t => {
-      activities.push({
-        id: `cash-${t.id}`,
-        description: `Cash payment received from ${t.clientName}`,
-        timestamp: new Date(t.date).toLocaleDateString('en-IN'),
-        type: 'success',
-      })
-    })
-
-    return activities.slice(0, 5)
-  },
-
   addCheque: async (cheque) => {
     try {
       set({ loading: true, error: null })
@@ -247,12 +181,9 @@ export const usePaymentStore = create<PaymentStore>((set, get) => ({
         cheques: [...state.cheques, newCheque],
         loading: false,
         backendConnected: true,
+        error: null
       }))
       get().calculateStats()
-      set({ 
-        upcomingPayments: get().getUpcomingPayments(),
-        recentActivity: get().getRecentActivity(),
-      })
     } catch (error) {
       console.error('Failed to add cheque:', error)
       set({ 
@@ -272,11 +203,9 @@ export const usePaymentStore = create<PaymentStore>((set, get) => ({
         cashTransactions: [...state.cashTransactions, newTransaction],
         loading: false,
         backendConnected: true,
+        error: null
       }))
       get().calculateStats()
-      set({ 
-        recentActivity: get().getRecentActivity(),
-      })
     } catch (error) {
       console.error('Failed to add cash transaction:', error)
       set({ 
@@ -288,24 +217,62 @@ export const usePaymentStore = create<PaymentStore>((set, get) => ({
     }
   },
 
+  updateChequeStatus: async (id: string, status: string, bounceReason?: string) => {
+    try {
+      set({ loading: true, error: null })
+      const updatedCheque = await chequeAPI.updateStatus(id, status, { bounceReason })
+      
+      set((state) => ({
+        cheques: state.cheques.map(c => 
+          c.id === id ? { ...c, status: status as any } : c
+        ),
+        loading: false,
+        backendConnected: true,
+        error: null
+      }))
+      
+      get().calculateStats()
+    } catch (error) {
+      console.error('Failed to update cheque status:', error)
+      
+      set((state) => ({
+        cheques: state.cheques.map(c => 
+          c.id === id ? { ...c, status: status as any } : c
+        ),
+        loading: false,
+        error: 'Updated locally - Backend not connected',
+        backendConnected: false
+      }))
+      
+      get().calculateStats()
+    }
+  },
+
   refreshData: async () => {
-    await get().fetchCheques()
-    await get().fetchCashTransactions()
-    await get().fetchDashboardData()
-    set({ lastUpdated: new Date().toLocaleTimeString() })
+    try {
+      await get().fetchCheques()
+      await get().fetchCashTransactions()
+      await get().fetchDashboardData()
+      set({ 
+        lastUpdated: new Date().toLocaleTimeString(),
+        error: null 
+      })
+    } catch (error) {
+      console.error('Failed to refresh data')
+    }
   },
 
   initializeStore: async () => {
     const state = get()
     
-    // Prevent re-initialization
-    if (state.initialized || state.loading) {
-      console.log('⏭️ Store already initialized or loading, skipping...')
+    // CRITICAL: Prevent multiple simultaneous initializations
+    if (state.initialized || state.loading || state.isInitializing) {
+      console.log('⏭️ Store already initialized/initializing, skipping...')
       return
     }
     
     console.log('🔄 Initializing store...')
-    set({ loading: true })
+    set({ loading: true, isInitializing: true, error: null })
     
     try {
       await get().fetchCheques()
@@ -314,6 +281,7 @@ export const usePaymentStore = create<PaymentStore>((set, get) => ({
       
       set({ 
         initialized: true,
+        isInitializing: false,
         backendConnected: true,
         error: null,
         loading: false 
@@ -321,11 +289,12 @@ export const usePaymentStore = create<PaymentStore>((set, get) => ({
       
       console.log('✅ Store initialized with backend data')
     } catch (error) {
-      console.log('⚠️ Backend not available, using empty state')
+      console.log('⚠️ Backend not available')
       set({ 
         initialized: true,
+        isInitializing: false,
         backendConnected: false,
-        error: 'Backend not connected',
+        error: null,
         loading: false,
         cheques: [],
         cashTransactions: [],

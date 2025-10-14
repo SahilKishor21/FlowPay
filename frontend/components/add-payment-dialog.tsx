@@ -25,6 +25,7 @@ import { useToast } from "@/hooks/use-toast"
 export function AddPaymentDialog() {
   const [open, setOpen] = useState(false)
   const [paymentType, setPaymentType] = useState("cheque")
+  const [status, setStatus] = useState("Pending")
   const [loading, setLoading] = useState(false)
   const { addCheque, addCashTransaction } = usePaymentStore()
   const { toast } = useToast()
@@ -43,7 +44,7 @@ export function AddPaymentDialog() {
           bankName: formData.get("bankName") as string,
           amount: parseFloat(formData.get("amount") as string),
           dueDate: formData.get("dueDate") as string,
-          status: formData.get("status") as any,
+          status: status as any,
         })
       } else {
         await addCashTransaction({
@@ -61,11 +62,13 @@ export function AddPaymentDialog() {
       })
       
       setOpen(false)
+      setPaymentType("cheque")
+      setStatus("Pending")
       e.currentTarget.reset()
     } catch (error) {
       toast({
-        title: "⚠️ Warning",
-        description: "Payment added locally. Backend connection failed.",
+        title: "❌ Error",
+        description: "Failed to add payment. Please try again.",
         variant: "destructive",
       })
     } finally {
@@ -120,7 +123,7 @@ export function AddPaymentDialog() {
               </div>
               <div className="space-y-2">
                 <Label>Status</Label>
-                <Select name="status" defaultValue="Pending">
+                <Select value={status} onValueChange={setStatus}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -128,6 +131,7 @@ export function AddPaymentDialog() {
                     <SelectItem value="Pending">Pending</SelectItem>
                     <SelectItem value="Post-Dated">Post-Dated</SelectItem>
                     <SelectItem value="Cleared">Cleared</SelectItem>
+                    <SelectItem value="Bounced">Bounced</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Eye, Download, X } from "lucide-react"
+import { Eye, Download, Edit } from "lucide-react"
 import { usePaymentStore } from "@/store/payment-store"
 import {
   Dialog,
@@ -11,11 +11,26 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { useToast } from "@/hooks/use-toast"
 
 export function ChequeList() {
-  const { cheques } = usePaymentStore()
+  const { cheques, updateChequeStatus } = usePaymentStore()
   const [selectedCheque, setSelectedCheque] = useState<any>(null)
   const [viewOpen, setViewOpen] = useState(false)
+  const [statusUpdateOpen, setStatusUpdateOpen] = useState(false)
+  const [newStatus, setNewStatus] = useState("")
+  const [bounceReason, setBounceReason] = useState("")
+  const [updating, setUpdating] = useState(false)
+  const { toast } = useToast()
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -30,6 +45,41 @@ export function ChequeList() {
   const handleView = (cheque: any) => {
     setSelectedCheque(cheque)
     setViewOpen(true)
+  }
+
+  const handleStatusUpdate = (cheque: any) => {
+    setSelectedCheque(cheque)
+    setNewStatus(cheque.status)
+    setBounceReason("")
+    setStatusUpdateOpen(true)
+  }
+
+  const submitStatusUpdate = async () => {
+    if (!selectedCheque || !newStatus) return
+    
+    setUpdating(true)
+    try {
+      await updateChequeStatus(
+        selectedCheque.id, 
+        newStatus, 
+        newStatus === "Bounced" ? bounceReason : undefined
+      )
+      
+      toast({
+        title: "✅ Status Updated",
+        description: `Cheque ${selectedCheque.chequeNumber} status updated to ${newStatus}`,
+      })
+      
+      setStatusUpdateOpen(false)
+    } catch (error) {
+      toast({
+        title: "⚠️ Update Warning",
+        description: "Status updated locally. Backend connection failed.",
+        variant: "destructive",
+      })
+    } finally {
+      setUpdating(false)
+    }
   }
 
   const generatePrintableHTML = (cheque: any) => {
@@ -339,6 +389,10 @@ export function ChequeList() {
               </div>
               
               <div className="flex gap-2 mt-3 sm:mt-0">
+                <Button size="sm" variant="outline" onClick={() => handleStatusUpdate(cheque)}>
+                  <Edit className="h-4 w-4 mr-1" />
+                  Status
+                </Button>
                 <Button size="sm" variant="outline" onClick={() => handleView(cheque)}>
                   <Eye className="h-4 w-4 mr-1" />
                   View
@@ -353,6 +407,59 @@ export function ChequeList() {
         )}
       </div>
 
+      {/* Status Update Dialog */}
+      <Dialog open={statusUpdateOpen} onOpenChange={setStatusUpdateOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Update Cheque Status</DialogTitle>
+          </DialogHeader>
+          {selectedCheque && (
+            <div className="space-y-4">
+              <div>
+                <p className="text-sm text-muted-foreground">Cheque Number</p>
+                <p className="font-semibold">{selectedCheque.chequeNumber}</p>
+              </div>
+              
+              <div className="space-y-2">
+                <Label>New Status</Label>
+                <Select value={newStatus} onValueChange={setNewStatus}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Pending">Pending</SelectItem>
+                    <SelectItem value="Post-Dated">Post-Dated</SelectItem>
+                    <SelectItem value="Cleared">Cleared</SelectItem>
+                    <SelectItem value="Bounced">Bounced</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {newStatus === "Bounced" && (
+                <div className="space-y-2">
+                  <Label htmlFor="bounceReason">Bounce Reason</Label>
+                  <Input
+                    id="bounceReason"
+                    placeholder="e.g., Insufficient funds, Signature mismatch"
+                    value={bounceReason}
+                    onChange={(e) => setBounceReason(e.target.value)}
+                  />
+                </div>
+              )}
+
+              <Button 
+                onClick={submitStatusUpdate} 
+                className="w-full"
+                disabled={updating || (newStatus === "Bounced" && !bounceReason)}
+              >
+                {updating ? "Updating..." : "Update Status"}
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* View Dialog */}
       <Dialog open={viewOpen} onOpenChange={setViewOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>

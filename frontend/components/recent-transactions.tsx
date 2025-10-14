@@ -1,17 +1,20 @@
 "use client"
 
-import { useMemo } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Activity } from "lucide-react"
 import { usePaymentStore } from "@/store/payment-store"
 
 export function RecentTransactions() {
-  const { cheques, cashTransactions } = usePaymentStore()
+  const cheques = usePaymentStore((state) => state.cheques)
+  const cashTransactions = usePaymentStore((state) => state.cashTransactions)
 
-  const recentActivity = useMemo(() => {
+  // Calculate recent activity directly in component
+  const getRecentActivity = () => {
     const activities: any[] = []
 
-    cheques.slice(-3).reverse().forEach(c => {
+    // Get last 3 cheques
+    const recentCheques = cheques.slice(-3).reverse()
+    recentCheques.forEach(c => {
       activities.push({
         id: `cheque-${c.id}`,
         description: `Cheque ${c.chequeNumber} - ${c.status}`,
@@ -20,7 +23,9 @@ export function RecentTransactions() {
       })
     })
 
-    cashTransactions.slice(-2).reverse().forEach(t => {
+    // Get last 2 cash transactions
+    const recentCash = cashTransactions.slice(-2).reverse()
+    recentCash.forEach(t => {
       activities.push({
         id: `cash-${t.id}`,
         description: `Cash payment received from ${t.clientName}`,
@@ -30,7 +35,9 @@ export function RecentTransactions() {
     })
 
     return activities.slice(0, 5)
-  }, [cheques, cashTransactions])
+  }
+
+  const recentActivity = getRecentActivity()
 
   return (
     <Card className="bg-white/50 dark:bg-slate-900/50 backdrop-blur-lg border-white/20 dark:border-slate-800/50 shadow-xl">

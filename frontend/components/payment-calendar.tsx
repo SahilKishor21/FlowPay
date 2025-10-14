@@ -1,15 +1,14 @@
 "use client"
 
-import { useMemo } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Calendar } from "lucide-react"
 import { usePaymentStore } from "@/store/payment-store"
 
 export function PaymentCalendar() {
-  const { cheques } = usePaymentStore()
+  const cheques = usePaymentStore((state) => state.cheques)
 
-  // Memoize upcoming payments calculation
-  const upcomingPayments = useMemo(() => {
+  // Calculate upcoming payments directly in component
+  const getUpcomingPayments = () => {
     const today = new Date()
     const nextMonth = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000)
 
@@ -30,7 +29,9 @@ export function PaymentCalendar() {
         amount: c.amount,
         date: c.dueDate,
       }))
-  }, [cheques])
+  }
+
+  const upcomingPayments = getUpcomingPayments()
 
   return (
     <Card className="bg-white/50 dark:bg-slate-900/50 backdrop-blur-lg border-white/20 dark:border-slate-800/50 shadow-xl">
