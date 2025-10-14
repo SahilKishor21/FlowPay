@@ -1,7 +1,5 @@
-<artifact identifier="complete-readme" type="application/vnd.ant.code" language="markdown" title="README.md">
-# B2B Payment Management System
 
-<div align="center">
+# B2B Payment Management System
 
 ![Next.js](https://img.shields.io/badge/Next.js-14.2.5-black)
 ![Node.js](https://img.shields.io/badge/Node.js-18.x-green)
