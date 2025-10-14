@@ -10,7 +10,13 @@ dotenv.config();
 const app = express();
 
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
+  origin: [
+    'http://localhost:3000', 
+    'http://127.0.0.1:3000',
+    'https://localhost:3000',
+    'https://flow-pay-jet.vercel.app',
+    'https://flow-pay-jet.vercel.app/'
+  ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
@@ -144,11 +150,10 @@ const PORT = process.env.PORT || 5000;
 const startServer = () => {
   app.listen(PORT, () => {
     console.log(`
-╔════════════════════════════════════════════╗
-║  🚀 Server running on port ${PORT}         ║
-║  📡 API: http://localhost:${PORT}/api      ║
-║  🏥 Health: http://localhost:${PORT}/api/health ║
-╚════════════════════════════════════════════╝
+
+   Server running on port ${PORT}         
+   API: http://localhost:${PORT}/api   
+   Health: http://localhost:${PORT}/api/health 
     `);
   });
 };
