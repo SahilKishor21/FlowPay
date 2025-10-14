@@ -131,7 +131,7 @@ export const usePaymentStore = create<PaymentStore>((set, get) => ({
       })
     } catch (error) {
       console.error('Failed to fetch clients:', error)
-      // Don't throw - clients are optional
+      
       set({ clients: [] })
     }
   },
@@ -210,63 +210,65 @@ export const usePaymentStore = create<PaymentStore>((set, get) => ({
   },
 
   addCheque: async (cheque) => {
-    try {
-      set({ loading: true, error: null })
-      const newCheque = await chequeAPI.create(cheque)
-      set((state) => ({
-        cheques: [...state.cheques, newCheque],
-        loading: false,
-        backendConnected: true,
-        error: null
-      }))
-      get().calculateStats()
-      
-      // Refresh clients if clientId provided
-      if (cheque.clientId) {
-        await get().fetchClients()
-      }
-    } catch (error: any) {
-      console.error('Failed to add cheque:', error)
-      
-      // Handle duplicate key error
-      if (error.response?.data?.error?.includes('duplicate key')) {
-        set({ 
-          loading: false, 
-          error: 'Cheque number already exists',
-          backendConnected: true 
-        })
-      } else {
-        set({ 
-          loading: false, 
-          error: 'Failed to save to backend',
-          backendConnected: false 
-        })
-      }
-      throw error
+  try {
+    set({ loading: true, error: null })
+    const newCheque = await chequeAPI.create(cheque)
+    set((state) => ({
+      cheques: [...state.cheques, newCheque],
+      loading: false,
+      backendConnected: true,
+      error: null
+    }))
+    get().calculateStats()
+    
+    if (cheque.clientId) {
+      await get().fetchClients()
     }
-  },
-
-  addCashTransaction: async (transaction) => {
-    try {
-      set({ loading: true, error: null })
-      const newTransaction = await cashAPI.create(transaction)
-      set((state) => ({
-        cashTransactions: [...state.cashTransactions, newTransaction],
-        loading: false,
-        backendConnected: true,
-        error: null
-      }))
-      get().calculateStats()
-    } catch (error) {
-      console.error('Failed to add cash transaction:', error)
+    
+    return newCheque
+  } catch (error: any) {
+    console.error('Failed to add cheque:', error)
+    
+    if (error.response?.data?.error?.includes('duplicate key')) {
+      set({ 
+        loading: false, 
+        error: 'Cheque number already exists',
+        backendConnected: true 
+      })
+    } else {
       set({ 
         loading: false, 
         error: 'Failed to save to backend',
         backendConnected: false 
       })
-      throw error
     }
-  },
+    throw error 
+  }
+},
+
+  addCashTransaction: async (transaction) => {
+  try {
+    set({ loading: true, error: null })
+    const newTransaction = await cashAPI.create(transaction)
+    set((state) => ({
+      cashTransactions: [...state.cashTransactions, newTransaction],
+      loading: false,
+      backendConnected: true,
+      error: null
+    }))
+    get().calculateStats()
+    
+    return newTransaction
+  } catch (error) {
+    console.error('Failed to add cash transaction:', error)
+    set({ 
+      loading: false, 
+      error: 'Failed to save to backend',
+      backendConnected: false 
+    })
+    throw error
+  }
+},
 
   addClient: async (client) => {
     try {
@@ -290,36 +292,46 @@ export const usePaymentStore = create<PaymentStore>((set, get) => ({
   },
 
   updateChequeStatus: async (id: string, status: string, bounceReason?: string) => {
-    try {
-      set({ loading: true, error: null })
-      const updatedCheque = await chequeAPI.updateStatus(id, status, { bounceReason })
-      
-      set((state) => ({
-        cheques: state.cheques.map(c => 
-          c._id === id ? { ...c, status: status as any, bounceReason } : c
-        ),
-        loading: false,
-        backendConnected: true,
-        error: null
-      }))
-      
-      get().calculateStats()
+  try {
+    set({ loading: true, error: null })
+    
+    console.log('Updating cheque status:', { id, status, bounceReason }) // Debug log
+    
+    const updatedCheque = await chequeAPI.updateStatus(id, status, { bounceReason })
+    
+    console.log('Updated cheque response:', updatedCheque) // Debug log
+    
+    set((state) => ({
+      cheques: state.cheques.map(c => 
+        c._id === id ? { ...c, status: status as any, bounceReason } : c
+      ),
+      loading: false,
+      backendConnected: true,
+      error: null
+    }))
+    
+    get().calculateStats()
+    const updatedChequeInState = get().cheques.find(c => c._id === id)
+    if (updatedChequeInState?.clientId) {
       await get().fetchClients()
-    } catch (error) {
-      console.error('Failed to update cheque status:', error)
-      
-      set((state) => ({
-        cheques: state.cheques.map(c => 
-          c._id === id ? { ...c, status: status as any } : c
-        ),
-        loading: false,
-        error: 'Updated locally - Backend not connected',
-        backendConnected: false
-      }))
-      
-      get().calculateStats()
     }
-  },
+    
+  } catch (error) {
+    console.error('Failed to update cheque status:', error)
+    
+    set((state) => ({
+      cheques: state.cheques.map(c => 
+        c._id === id ? { ...c, status: status as any, bounceReason } : c
+      ),
+      loading: false,
+      error: 'Updated locally - Backend may not be connected',
+      backendConnected: false
+    }))
+    
+    get().calculateStats()
+    throw error 
+  }
+},
 
   refreshData: async () => {
     try {

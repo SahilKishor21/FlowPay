@@ -1,34 +1,34 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { usePaymentStore } from "@/store/payment-store"
-import { useToast } from "@/hooks/use-toast"
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { usePaymentStore } from "@/store/payment-store";
+import { useToast } from "@/hooks/use-toast";
 
 interface AddClientDialogProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
 export function AddClientDialog({ open, onOpenChange }: AddClientDialogProps) {
-  const [loading, setLoading] = useState(false)
-  const { addClient } = usePaymentStore()
-  const { toast } = useToast()
+  const [loading, setLoading] = useState(false);
+  const { addClient } = usePaymentStore();
+  const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    setLoading(true)
-    
-    const formData = new FormData(e.currentTarget)
-    
+    e.preventDefault();
+    setLoading(true);
+
+    const formData = new FormData(e.currentTarget);
+
     try {
       await addClient({
         name: formData.get("name") as string,
@@ -37,32 +37,42 @@ export function AddClientDialog({ open, onOpenChange }: AddClientDialogProps) {
         phone: formData.get("phone") as string,
         gstNumber: formData.get("gstNumber") as string,
         panNumber: formData.get("panNumber") as string,
-        creditLimit: parseFloat(formData.get("creditLimit") as string) || 100000,
-      })
+        creditLimit:
+          parseFloat(formData.get("creditLimit") as string) || 100000,
+      });
 
       toast({
         title: "✅ Client Added Successfully",
         description: "New client has been added to the system.",
-      })
-      
-      onOpenChange(false)
-      e.currentTarget.reset()
+      });
+
+      onOpenChange(false);
+      e.currentTarget.reset();
     } catch (error) {
       toast({
         title: "❌ Error",
         description: "Failed to add client. Please try again.",
         variant: "destructive",
-      })
+      });
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent
+        className="sm:max-w-[500px]"
+        aria-describedby="add-client-description"
+      >
         <DialogHeader>
           <DialogTitle>Add New Client</DialogTitle>
+          <p
+            id="add-client-description"
+            className="text-sm text-muted-foreground sr-only"
+          >
+            Fill in the form to add a new client
+          </p>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
@@ -99,16 +109,16 @@ export function AddClientDialog({ open, onOpenChange }: AddClientDialogProps) {
 
           <div className="space-y-2">
             <Label htmlFor="creditLimit">Credit Limit (₹)</Label>
-            <Input 
-              id="creditLimit" 
-              name="creditLimit" 
-              type="number" 
+            <Input
+              id="creditLimit"
+              name="creditLimit"
+              type="number"
               defaultValue="100000"
             />
           </div>
 
-          <Button 
-            type="submit" 
+          <Button
+            type="submit"
             className="w-full bg-gradient-to-r from-blue-600 to-purple-600"
             disabled={loading}
           >
@@ -117,5 +127,5 @@ export function AddClientDialog({ open, onOpenChange }: AddClientDialogProps) {
         </form>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

@@ -54,33 +54,36 @@ export function ChequeList() {
     setStatusUpdateOpen(true)
   }
 
-  const submitStatusUpdate = async () => {
-    if (!selectedCheque || !newStatus) return
+ const submitStatusUpdate = async () => {
+  if (!selectedCheque || !newStatus) return
+  
+  setUpdating(true)
+  try {
+    await updateChequeStatus(
+      selectedCheque._id,  // Changed from .id to ._id
+      newStatus, 
+      newStatus === "Bounced" ? bounceReason : undefined
+    )
     
-    setUpdating(true)
-    try {
-      await updateChequeStatus(
-        selectedCheque.id, 
-        newStatus, 
-        newStatus === "Bounced" ? bounceReason : undefined
-      )
-      
-      toast({
-        title: "✅ Status Updated",
-        description: `Cheque ${selectedCheque.chequeNumber} status updated to ${newStatus}`,
-      })
-      
-      setStatusUpdateOpen(false)
-    } catch (error) {
-      toast({
-        title: "⚠️ Update Warning",
-        description: "Status updated locally. Backend connection failed.",
-        variant: "destructive",
-      })
-    } finally {
-      setUpdating(false)
-    }
+    toast({
+      title: "✅ Status Updated",
+      description: `Cheque ${selectedCheque.chequeNumber} status updated to ${newStatus}`,
+    })
+    
+    setStatusUpdateOpen(false)
+    setSelectedCheque(null) // Clear selection
+    setBounceReason("")
+  } catch (error) {
+    console.error('Status update error:', error)
+    toast({
+      title: "❌ Update Failed",
+      description: "Failed to update cheque status",
+      variant: "destructive",
+    })
+  } finally {
+    setUpdating(false)
   }
+}
 
   const generatePrintableHTML = (cheque: any) => {
     return `

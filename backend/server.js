@@ -155,15 +155,17 @@ const startServer = () => {
 
 if (process.env.MONGODB_URI) {
   mongoose
-    .connect(process.env.MONGODB_URI)
+    .connect(process.env.MONGODB_URI, {
+      serverSelectionTimeoutMS: 10000,
+    })
     .then(() => {
       console.log('✅ Connected to MongoDB');
       startServer();
     })
     .catch((err) => {
       console.error('❌ MongoDB connection error:', err.message);
-      console.log('⚠️  Starting server without database...');
-      startServer();
+      console.log('⚠️  Starting server WITHOUT database...');
+      startServer(); 
     });
 } else {
   console.log('⚠️  No MongoDB URI provided. Starting without database...');
