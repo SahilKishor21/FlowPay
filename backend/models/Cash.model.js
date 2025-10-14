@@ -1,72 +1,66 @@
 const mongoose = require('mongoose');
 
-const cashSchema = new mongoose.Schema({
+const CashSchema = new mongoose.Schema({
+  clientId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Client'
+  },
   clientName: {
     type: String,
-    required: true,
+    required: true
   },
   receiptNumber: {
     type: String,
     required: true,
-    unique: true,
+    unique: true
   },
   amount: {
     type: Number,
-    required: true,
+    required: true
   },
   date: {
     type: Date,
     required: true,
-    default: Date.now,
-  },
-  verified: {
-    type: Boolean,
-    default: false,
-  },
-  verifiedBy: {
-    type: String,
-  },
-  clientContact: {
-    type: String,
-  },
-  invoiceNumber: {
-    type: String,
-  },
-  paymentMode: {
-    type: String,
-    enum: ['Cash', 'Demand Draft', 'Pay Order'],
-    default: 'Cash',
+    default: Date.now
   },
   denominationBreakdown: [{
-    denomination: Number,
-    count: Number,
+    value: {
+      type: Number,
+      required: true
+    },
+    count: {
+      type: Number,
+      required: true,
+      default: 0
+    },
+    total: {
+      type: Number,
+      required: true,
+      default: 0
+    }
   }],
-  remarks: {
-    type: String,
+  verified: {
+    type: Boolean,
+    default: false
+  },
+  verifiedBy: {
+    type: String
   },
   depositedToBank: {
     type: Boolean,
-    default: false,
-  },
-  bankDepositDate: {
-    type: Date,
+    default: false
   },
   bankName: {
-    type: String,
+    type: String
   },
-  createdAt: {
-    type: Date,
-    default: Date.now,
+  bankDepositDate: {
+    type: Date
   },
-  updatedAt: {
-    type: Date,
-    default: Date.now,
-  },
+  notes: {
+    type: String
+  }
+}, {
+  timestamps: true
 });
 
-cashSchema.pre('save', function(next) {
-  this.updatedAt = Date.now();
-  next();
-});
-
-module.exports = mongoose.model('Cash', cashSchema);
+module.exports = mongoose.model('Cash', CashSchema);

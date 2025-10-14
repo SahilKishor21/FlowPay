@@ -1,25 +1,43 @@
 "use client"
 
 import { create } from 'zustand'
-import { chequeAPI, cashAPI, dashboardAPI } from '@/lib/api'
+import { chequeAPI, cashAPI, dashboardAPI, clientAPI } from '@/lib/api'
 
 interface Cheque {
-  id: string
+  _id: string
+  clientId?: string
   clientName: string
   chequeNumber: string
   bankName: string
   amount: number
   dueDate: string
   status: 'Pending' | 'Cleared' | 'Bounced' | 'Post-Dated'
+  bounceReason?: string
+  ocrData?: any
 }
 
 interface CashTransaction {
-  id: string
+  _id: string
+  clientId?: string
   clientName: string
   receiptNumber: string
   amount: number
   date: string
   verified: boolean
+  denominationBreakdown?: Array<{ value: number; count: number; total: number }>
+}
+
+interface Client {
+  _id: string
+  name: string
+  companyName: string
+  email: string
+  phone: string
+  riskScore: number
+  riskLevel: 'Low' | 'Medium' | 'High'
+  creditLimit: number
+  outstandingAmount: number
+  bounceCount: number
 }
 
 interface Stats {
@@ -32,6 +50,7 @@ interface Stats {
 interface PaymentStore {
   cheques: Cheque[]
   cashTransactions: CashTransaction[]
+  clients: Client[]
   stats: Stats
   lastUpdated: string
   loading: boolean
@@ -40,12 +59,13 @@ interface PaymentStore {
   initialized: boolean
   isInitializing: boolean
   
-  // Actions
   fetchCheques: () => Promise<void>
   fetchCashTransactions: () => Promise<void>
+  fetchClients: () => Promise<void>
   fetchDashboardData: () => Promise<void>
-  addCheque: (cheque: Omit<Cheque, 'id'>) => Promise<void>
-  addCashTransaction: (transaction: Omit<CashTransaction, 'id'>) => Promise<void>
+  addCheque: (cheque: any) => Promise<void>
+  addCashTransaction: (transaction: any) => Promise<void>
+  addClient: (client: any) => Promise<void>
   updateChequeStatus: (id: string, status: string, bounceReason?: string) => Promise<void>
   refreshData: () => Promise<void>
   calculateStats: () => void
@@ -55,6 +75,7 @@ interface PaymentStore {
 export const usePaymentStore = create<PaymentStore>((set, get) => ({
   cheques: [],
   cashTransactions: [],
+  clients: [],
   stats: {
     totalOutstanding: 0,
     pendingCheques: 0,
@@ -97,6 +118,21 @@ export const usePaymentStore = create<PaymentStore>((set, get) => ({
       console.error('Failed to fetch cash transactions:', error)
       set({ backendConnected: false })
       throw error
+    }
+  },
+
+  fetchClients: async () => {
+    try {
+      const data = await clientAPI.getAll()
+      set({ 
+        clients: data, 
+        backendConnected: true,
+        error: null 
+      })
+    } catch (error) {
+      console.error('Failed to fetch clients:', error)
+      // Don't throw - clients are optional
+      set({ clients: [] })
     }
   },
 
@@ -184,13 +220,28 @@ export const usePaymentStore = create<PaymentStore>((set, get) => ({
         error: null
       }))
       get().calculateStats()
-    } catch (error) {
+      
+      // Refresh clients if clientId provided
+      if (cheque.clientId) {
+        await get().fetchClients()
+      }
+    } catch (error: any) {
       console.error('Failed to add cheque:', error)
-      set({ 
-        loading: false, 
-        error: 'Failed to save to backend',
-        backendConnected: false 
-      })
+      
+      // Handle duplicate key error
+      if (error.response?.data?.error?.includes('duplicate key')) {
+        set({ 
+          loading: false, 
+          error: 'Cheque number already exists',
+          backendConnected: true 
+        })
+      } else {
+        set({ 
+          loading: false, 
+          error: 'Failed to save to backend',
+          backendConnected: false 
+        })
+      }
       throw error
     }
   },
@@ -217,6 +268,27 @@ export const usePaymentStore = create<PaymentStore>((set, get) => ({
     }
   },
 
+  addClient: async (client) => {
+    try {
+      set({ loading: true, error: null })
+      const newClient = await clientAPI.create(client)
+      set((state) => ({
+        clients: [...state.clients, newClient],
+        loading: false,
+        backendConnected: true,
+        error: null
+      }))
+    } catch (error) {
+      console.error('Failed to add client:', error)
+      set({ 
+        loading: false, 
+        error: 'Failed to save to backend',
+        backendConnected: false 
+      })
+      throw error
+    }
+  },
+
   updateChequeStatus: async (id: string, status: string, bounceReason?: string) => {
     try {
       set({ loading: true, error: null })
@@ -224,7 +296,7 @@ export const usePaymentStore = create<PaymentStore>((set, get) => ({
       
       set((state) => ({
         cheques: state.cheques.map(c => 
-          c.id === id ? { ...c, status: status as any } : c
+          c._id === id ? { ...c, status: status as any, bounceReason } : c
         ),
         loading: false,
         backendConnected: true,
@@ -232,12 +304,13 @@ export const usePaymentStore = create<PaymentStore>((set, get) => ({
       }))
       
       get().calculateStats()
+      await get().fetchClients()
     } catch (error) {
       console.error('Failed to update cheque status:', error)
       
       set((state) => ({
         cheques: state.cheques.map(c => 
-          c.id === id ? { ...c, status: status as any } : c
+          c._id === id ? { ...c, status: status as any } : c
         ),
         loading: false,
         error: 'Updated locally - Backend not connected',
@@ -252,6 +325,7 @@ export const usePaymentStore = create<PaymentStore>((set, get) => ({
     try {
       await get().fetchCheques()
       await get().fetchCashTransactions()
+      await get().fetchClients()
       await get().fetchDashboardData()
       set({ 
         lastUpdated: new Date().toLocaleTimeString(),
@@ -265,9 +339,8 @@ export const usePaymentStore = create<PaymentStore>((set, get) => ({
   initializeStore: async () => {
     const state = get()
     
-    // CRITICAL: Prevent multiple simultaneous initializations
     if (state.initialized || state.loading || state.isInitializing) {
-      console.log('⏭️ Store already initialized/initializing, skipping...')
+      console.log('⏭️ Store already initialized or loading, skipping...')
       return
     }
     
@@ -277,6 +350,7 @@ export const usePaymentStore = create<PaymentStore>((set, get) => ({
     try {
       await get().fetchCheques()
       await get().fetchCashTransactions()
+      await get().fetchClients() // Won't fail even if route missing
       await get().fetchDashboardData()
       
       set({ 
@@ -298,6 +372,7 @@ export const usePaymentStore = create<PaymentStore>((set, get) => ({
         loading: false,
         cheques: [],
         cashTransactions: [],
+        clients: [],
         stats: {
           totalOutstanding: 0,
           pendingCheques: 0,

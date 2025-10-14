@@ -1,67 +1,104 @@
 const mongoose = require('mongoose');
 
-const chequeSchema = new mongoose.Schema({
+const ChequeSchema = new mongoose.Schema({
+  clientId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Client',
+    required: false  // CHANGED TO FALSE for backward compatibility
+  },
   clientName: {
     type: String,
-    required: true,
+    required: true
   },
   chequeNumber: {
     type: String,
     required: true,
-    unique: true,
+    unique: true
   },
   bankName: {
     type: String,
-    required: true,
+    required: true
   },
   amount: {
     type: Number,
-    required: true,
+    required: true
   },
   issueDate: {
     type: Date,
-    default: Date.now,
+    default: Date.now
   },
   dueDate: {
     type: Date,
-    required: true,
+    required: true
   },
   status: {
     type: String,
-    enum: ['Pending', 'Cleared', 'Bounced', 'Post-Dated', 'Cancelled'],
-    default: 'Pending',
-  },
-  clientContact: {
-    type: String,
-  },
-  invoiceNumber: {
-    type: String,
-  },
-  remarks: {
-    type: String,
+    enum: ['Pending', 'Cleared', 'Bounced', 'Post-Dated'],
+    default: 'Pending'
   },
   chequeImage: {
-    type: String,
+    type: String
+  },
+  ocrData: {
+    extractedChequeNumber: String,
+    extractedAmount: String,
+    extractedDate: String,
+    extractedBank: String,
+    confidence: Number
   },
   bounceReason: {
-    type: String,
+    type: String
+  },
+  bounceDate: {
+    type: Date
   },
   clearanceDate: {
-    type: Date,
+    type: Date
   },
-  createdAt: {
-    type: Date,
-    default: Date.now,
+  reminderSent: {
+    type: Boolean,
+    default: false
   },
-  updatedAt: {
-    type: Date,
-    default: Date.now,
+  reminderDate: {
+    type: Date
   },
+  notes: {
+    type: String
+  }
+}, {
+  timestamps: true
 });
 
-chequeSchema.pre('save', function(next) {
-  this.updatedAt = Date.now();
-  next();
+ChequeSchema.post('save', async function() {
+  if (this.clientId) {
+    try {
+      const Client = mongoose.model('Client');
+      const client = await Client.findById(this.clientId);
+      if (client) {
+        await client.updateOutstanding();
+        await client.calculateRiskScore();
+        await client.save();
+      }
+    } catch (error) {
+      console.error('Error updating client after cheque save:', error);
+    }
+  }
 });
 
-module.exports = mongoose.model('Cheque', chequeSchema);
+ChequeSchema.post('findOneAndUpdate', async function(doc) {
+  if (doc && doc.clientId) {
+    try {
+      const Client = mongoose.model('Client');
+      const client = await Client.findById(doc.clientId);
+      if (client) {
+        await client.updateOutstanding();
+        await client.calculateRiskScore();
+        await client.save();
+      }
+    } catch (error) {
+      console.error('Error updating client after cheque update:', error);
+    }
+  }
+});
+
+module.exports = mongoose.model('Cheque', ChequeSchema);
