@@ -227,7 +227,7 @@ export function CashList() {
     <div class="section-title">TRANSACTION DETAILS</div>
     <div class="row">
       <span class="label">Transaction ID:</span>
-      <span class="value">${transaction.id}</span>
+      <span class="value">${transaction.receiptNumber}</span> <!-- ✅ FIX -->
     </div>
     <div class="row">
       <span class="label">Payment Method:</span>
@@ -303,7 +303,7 @@ export function CashList() {
         ) : (
           cashTransactions.map((transaction) => (
             <div
-              key={transaction.id}
+              key={transaction.receiptNumber}  // ✅ FIX
               className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-gradient-to-r from-white/80 to-green-50/80 dark:from-slate-800/80 dark:to-green-900/20 rounded-xl border border-white/40 dark:border-slate-700/40 hover:shadow-lg transition-all"
             >
               <div className="flex-1">
@@ -379,7 +379,7 @@ export function CashList() {
                 </div>
                 <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg md:col-span-2">
                   <p className="text-xs text-muted-foreground mb-1">Transaction ID</p>
-                  <p className="font-mono text-sm">{selectedCash.id}</p>
+                  <p className="font-mono text-sm">{selectedCash.receiptNumber}</p> {/* ✅ FIX */}
                 </div>
               </div>
 
