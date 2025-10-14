@@ -24,7 +24,7 @@ export function PaymentCalendar() {
       .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
       .slice(0, 5)
       .map(c => ({
-        id: c.id,
+        id: c._id,
         clientName: c.clientName,
         amount: c.amount,
         date: c.dueDate,

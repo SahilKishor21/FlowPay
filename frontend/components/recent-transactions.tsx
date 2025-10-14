@@ -16,7 +16,7 @@ export function RecentTransactions() {
     const recentCheques = cheques.slice(-3).reverse()
     recentCheques.forEach(c => {
       activities.push({
-        id: `cheque-${c.id}`,
+        id: `cheque-${c._id}`,
         description: `Cheque ${c.chequeNumber} - ${c.status}`,
         timestamp: new Date(c.dueDate).toLocaleDateString('en-IN'),
         type: c.status === 'Cleared' ? 'success' : c.status === 'Bounced' ? 'warning' : 'info',
@@ -27,7 +27,7 @@ export function RecentTransactions() {
     const recentCash = cashTransactions.slice(-2).reverse()
     recentCash.forEach(t => {
       activities.push({
-        id: `cash-${t.id}`,
+        id: `cash-${t._id}`,
         description: `Cash payment received from ${t.clientName}`,
         timestamp: new Date(t.date).toLocaleDateString('en-IN'),
         type: 'success',
