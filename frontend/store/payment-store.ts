@@ -166,48 +166,45 @@ export const usePaymentStore = create<PaymentStore>((set, get) => ({
   },
 
   calculateStats: () => {
-    const { cheques, cashTransactions } = get()
-    
-    const currentDate = new Date()
-    const currentMonth = currentDate.getMonth()
-    const currentYear = currentDate.getFullYear()
+  const { cheques, cashTransactions } = get()
+  
+  const currentDate = new Date()
+  const currentMonth = currentDate.getMonth()
+  const currentYear = currentDate.getFullYear()
 
-    const pendingCheques = cheques.filter(c => 
-      c.status === 'Pending' || c.status === 'Post-Dated'
-    )
-    
-    const totalOutstanding = pendingCheques.reduce((sum, c) => sum + c.amount, 0)
-    
-    const clearedThisMonth = [
-      ...cheques.filter(c => {
-        if (c.status !== 'Cleared') return false
-        const chequeDate = new Date(c.dueDate)
-        return chequeDate.getMonth() === currentMonth && chequeDate.getFullYear() === currentYear
-      }),
-    ].reduce((sum, c) => sum + c.amount, 0) + 
-    cashTransactions.filter(t => {
-      const txDate = new Date(t.date)
-      return txDate.getMonth() === currentMonth && txDate.getFullYear() === currentYear && t.verified
-    }).reduce((sum, t) => sum + t.amount, 0)
+  const pendingCheques = cheques.filter(c => 
+    c.status === 'Pending' || c.status === 'Post-Dated'
+  )
+  
+  const totalOutstanding = pendingCheques.reduce((sum, c) => sum + c.amount, 0)
+  
+  const clearedThisMonth = [
+    ...cheques.filter(c => {
+      if (c.status !== 'Cleared') return false
+      const chequeDate = new Date(c.dueDate)
+      return chequeDate.getMonth() === currentMonth && chequeDate.getFullYear() === currentYear
+    }),
+  ].reduce((sum, c) => sum + c.amount, 0) + 
+  cashTransactions.filter(t => {
+    const txDate = new Date(t.date)
+    return txDate.getMonth() === currentMonth && txDate.getFullYear() === currentYear && t.verified
+  }).reduce((sum, t) => sum + t.amount, 0)
 
-    const bouncedCheques = cheques.filter(c => c.status === 'Bounced').length
-    const totalProcessedCheques = cheques.filter(c => 
-      c.status === 'Cleared' || c.status === 'Bounced'
-    ).length
-    
-    const bounceRate = totalProcessedCheques > 0 
-      ? parseFloat(((bouncedCheques / totalProcessedCheques) * 100).toFixed(1))
-      : 0
+  const bouncedCheques = cheques.filter(c => c.status === 'Bounced').length
+  const totalCheques = cheques.length
+  const bounceRate = totalCheques > 0 
+    ? parseFloat(((bouncedCheques / totalCheques) * 100).toFixed(1))
+    : 0
 
-    set({
-      stats: {
-        totalOutstanding,
-        pendingCheques: pendingCheques.length,
-        clearedThisMonth,
-        bounceRate,
-      },
-    })
-  },
+  set({
+    stats: {
+      totalOutstanding,
+      pendingCheques: pendingCheques.length,
+      clearedThisMonth,
+      bounceRate,
+    },
+  })
+},
 
   addCheque: async (cheque) => {
   try {
