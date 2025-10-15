@@ -823,18 +823,3 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - 🔄 Data encryption at rest
 - 🔄 Password hashing (bcrypt)
 
----
-
-<div align="center">
-
-⭐ Star us on GitHub — it helps!
-
-[Report Bug](https://github.com/yourusername/payment-management-system/issues) · [Request Feature](https://github.com/yourusername/payment-management-system/issues)
-
-**Current Version**: 2.0.0  
-**Last Updated**: October 15, 2025  
-**Status**: Production Ready ✅
-
-</div>
-</artifact>
-
