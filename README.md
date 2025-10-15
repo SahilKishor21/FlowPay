@@ -1,4 +1,4 @@
-<artifact identifier="complete-readme" type="application/vnd.ant.code" language="markdown" title="README.md">
+
 # B2B Payment Management System
 
 <div align="center">
