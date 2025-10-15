@@ -1,8 +1,6 @@
 
 # B2B Payment Management System
 
-<div align="center">
-
 ![Next.js](https://img.shields.io/badge/Next.js-14.2.5-black)
 ![Node.js](https://img.shields.io/badge/Node.js-18.x-green)
 ![MongoDB](https://img.shields.io/badge/MongoDB-8.3.2-green)
