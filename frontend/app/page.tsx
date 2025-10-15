@@ -7,9 +7,8 @@ import { PaymentTabs } from "@/components/payment-tabs"
 import { PaymentCalendar } from "@/components/payment-calendar"
 import { RecentTransactions } from "@/components/recent-transactions"
 import { Analytics } from "@/components/analytics"
+import { RiskSummaryCard } from "@/components/risk-summary-card"  
 import { usePaymentStore } from "@/store/payment-store"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Wifi, WifiOff } from "lucide-react"
 
 export default function Home() {
   const { backendConnected, initialized, loading } = usePaymentStore()
@@ -48,6 +47,7 @@ export default function Home() {
           
           <div className="space-y-6">
             <PaymentCalendar />
+            <RiskSummaryCard />  
             <Analytics />
           </div>
         </div>

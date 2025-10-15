@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Plus, TrendingUp, AlertTriangle, CheckCircle } from "lucide-react"
 import { AddClientDialog } from "@/components/add-client-dialog"
+import { RiskDashboard } from "@/components/risk-dashboard"  // ← ADD THIS
 
 export default function ClientsPage() {
   const { clients, fetchClients, loading } = usePaymentStore()
@@ -64,6 +65,8 @@ export default function ClientsPage() {
             Add Client
           </Button>
         </div>
+
+        <RiskDashboard />
 
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
